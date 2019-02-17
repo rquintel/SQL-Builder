@@ -1,0 +1,120 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Feb 17 11:49:30 2019
+
+@author: rquintel
+"""
+
+class SQLStatement(object):
+    
+    def __init__(self, tabela):
+        self.tabela = tabela
+        self.atributos = []
+        self.valores = []
+        self.where = []
+        
+    def addAtributos(self, atributo):
+        self.atributos.append(atributo)
+    
+    def addValores(self, valor):
+        self.valores.append(valor)
+        
+    def addWhere(self, atributo, valor):
+        self.where.append([atributo, valor])
+        
+    def buildWhere(self):
+        whereStmt = ""
+        for i in range(len(self.where)):
+            if i == 0:
+                whereStmt = " WHERE {0} = {1}".format(self.where[i][0],
+                                                      self.where[i][1])
+            else:
+                whereStmt = whereStmt + \
+                " AND {0} = {1}".format(self.where[i][0], self.where[i][1])
+        
+        return whereStmt
+    
+    def buildInsert(self):
+        atribs = ""
+        vals = ""        
+        for lista_atributos in self.atributos:
+            for atributo in lista_atributos:
+                atribs = atribs + "{0}, ".format(atributo)
+        
+        atribs = atribs[:-2]
+        
+        for lista_valores in self.valores:
+            for i, valor in enumerate(lista_valores):
+                if i == 0:
+                    vals = vals + "({0}, ".format(valor)
+                else:                                   
+                    vals = vals + "{0}, ".format(valor)
+                
+            vals = vals[:-2]
+            vals = vals + "), "      
+            
+        vals = vals[:-2]
+        
+        insertStmt = "INSERT INTO {0} ({1}) " \
+                     "VALUES {2}".format(self.tabela, atribs, vals)
+                     
+        return insertStmt
+
+    def buildUpdate(self, where = True):
+        setClause = ""
+        Atributos = self.atributos[0]
+        Valores = self.valores[0]
+        for atributo, valor in zip(Atributos, Valores):                   
+            setClause = setClause + atributo + " = " + valor + ", "           
+            
+        setClause = setClause[:-2]
+        
+        if where:
+            updateStmt = "UPDATE {0} SET {1}" \
+                         "{2}".format( \
+                                    self.tabela, setClause, self.buildWhere())
+                         
+        else:
+            updateStmt = "UPDATE {0} SET {1}".format(self.tabela, setClause)
+            
+        
+        return updateStmt
+
+    def buildDelete(self, where = True):
+        if where:
+            deleteStmt = "DELETE FROM " \
+                         "{0}{1}".format(self.tabela, self.buildWhere())
+                         
+        else:
+            deleteStmt = "DELETE FROM " \
+                         "{0}".format(self.tabela)
+                         
+        return deleteStmt
+
+    def buildSelect(self, todos = True, where = False):        
+                
+        if todos:
+            if not where:            
+                selectStmt = "SELECT * FROM {0}".format(self.tabela)
+            
+            else:
+                selectStmt = "SELECT * FROM " \
+                             "{0}{1}".format(self.tabela, self.buildWhere())
+                             
+        elif not todos:
+            atribs = ""
+            for lista_atribs in self.atributos:
+                for atributo in lista_atribs:
+                    atribs = atribs + "{0}, ".format(atributo)
+                    
+            atribs = atribs[:-2]            
+        
+            if not where:               
+                selectStmt = "SELECT {0} FROM " \
+                             "{1}".format(atribs, self.tabela)
+                             
+            else:                
+                selectStmt = "SELECT {0} FROM " \
+                    "{1}{2}".format(atribs, self.tabela, self.buildWhere())                             
+        
+        return selectStmt
